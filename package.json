@@ -7,6 +7,7 @@
   "scripts": {
     "prepare": "npmluau",
     "build-assets": "sh ./scripts/build-assets.sh",
+    "build:wally:stronk": "sh ./scripts/build-wally-stronk.sh",
     "lint": "selene src",
     "format": "stylua src",
     "style-check": "stylua src --check",
