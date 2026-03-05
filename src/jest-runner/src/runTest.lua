@@ -253,7 +253,7 @@ local function runTestInternal(
 
 		for _, path_ in projectConfig.setupFiles do
 			-- ROBLOX deviation START: no esm modules in Lua
-			runtime:requireModule(path_, nil, nil, nil, true)
+			runtime:requireModule(path_)
 			-- local esm = runtime:unstable_shouldLoadAsEsm(path)
 			-- if esm ~= nil then
 			-- 	runtime:unstable_importModule(path):expect()

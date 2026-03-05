@@ -7,7 +7,7 @@
  ]]
 
 local exports = {}
-local coreModule = require("@pkg/@jsdotlua/jest-core")
+local coreModule = require(script.Parent:WaitForChild("jest-core"))
 exports.SearchSource = coreModule.SearchSource
 exports.TestWatcher = coreModule.TestWatcher
 exports.createTestScheduler = coreModule.createTestScheduler
