@@ -44,6 +44,7 @@ roblox.toml
 # Agent tooling
 .codex/
 .gemini/
+.mcp-tools
 
 # Foreman tool cache
 .foreman/
