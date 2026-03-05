@@ -18,7 +18,4 @@ exports.runCLI = coreModule.runCLI
 -- ROBLOX deviation START: JestCli is not ported
 -- exports.run = require("@pkg/JestCli").run
 -- ROBLOX deviation END
-
--- ROBLOX deviation: args handles arg parsing from ProcessService
-exports.args = require(script["args.roblox"])
 return exports
