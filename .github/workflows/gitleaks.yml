@@ -1,0 +1,25 @@
+name: Secret Scan (gitleaks)
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - refactor/**
+  pull_request:
+    branches:
+      - master
+      - main
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: --config=.gitleaks.toml --redact --verbose

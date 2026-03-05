@@ -41,6 +41,16 @@ roblox.toml
 .idea
 .vscode
 
+# Agent tooling
+.codex/
+.gemini/
+
+# Foreman tool cache
+.foreman/
+
+# Python bytecode
+**/__pycache__/
+
 jest_runner_tmp
 lcov.info
 rbx-aged-tool.log
