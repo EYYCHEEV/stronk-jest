@@ -1,6 +1,6 @@
 [package]
 name = "eyycheev/jest-runtime"
-version = "3.10.0-stronk.8"
+version = "3.10.0-stronk.10"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 license = "MIT"
