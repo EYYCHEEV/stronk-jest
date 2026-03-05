@@ -1942,7 +1942,69 @@ function Runtime_private:_execModule(
 	local moduleFunction, defaultEnvironment, errorMessage, cleanupFn
 
 	local modulePath = localModule.filename
-	local loadModuleEnabled = pcall((debug :: any).loadmodule, Instance.new("ModuleScript"))
+	local loadmoduleValue = (debug :: any).loadmodule
+	local loadmodule: ((ModuleScript) -> (any, string, () -> any))? = if type(loadmoduleValue) == "function"
+		then loadmoduleValue
+		else nil
+	local NO_MODULE_RETURN_ERROR = "Module code did not return exactly one value"
+	-- `_G.__NO_LOADMODULE__` can be set by external probes that are stricter than
+	-- runtime module loading itself. Prefer direct capability checks here.
+	local loadModuleEnabled = loadmodule ~= nil
+
+	local function tryRequireFallback(loadReason: any): boolean
+		local globalTable: any = _G
+		local hadInjectedGlobals = false
+		local previousInjectedGlobals = nil
+		if type(globalTable) == "table" then
+			hadInjectedGlobals = globalTable.__STRONK_JEST_GLOBALS__ ~= nil
+			previousInjectedGlobals = globalTable.__STRONK_JEST_GLOBALS__
+			local injectedGlobals = Object.assign({}, self:getGlobalsFromEnvironment(), {
+				jest = self._jestObject,
+			})
+			globalTable.__STRONK_JEST_GLOBALS__ = injectedGlobals
+		end
+
+		local requireOk, requireResultOrErr = pcall(require, modulePath)
+
+		if type(globalTable) == "table" then
+			if hadInjectedGlobals then
+				globalTable.__STRONK_JEST_GLOBALS__ = previousInjectedGlobals
+			else
+				globalTable.__STRONK_JEST_GLOBALS__ = nil
+			end
+		end
+
+		if requireOk then
+			localModule.exports = requireResultOrErr
+			return true
+		end
+		local requireErr = tostring(requireResultOrErr)
+
+		if noModuleReturnRequired == true and requireErr == NO_MODULE_RETURN_ERROR then
+			localModule.exports = nil
+			return true
+		end
+
+		local sourceOk, sourceOrErr = pcall(function()
+			return modulePath.Source
+		end)
+		if not sourceOk then
+			error(
+				Error.new(
+					("Unable to load module '%s': debug.loadmodule unavailable or failed (%s); require(module) failed (%s); and ModuleScript.Source cannot be read (%s)"):format(
+						modulePath:GetFullName(),
+						tostring(loadReason),
+						requireErr,
+						tostring(sourceOrErr)
+					)
+				)
+			)
+		end
+
+		moduleFunction = loadstring(sourceOrErr :: string, modulePath:GetFullName())
+		errorMessage = requireErr
+		return false
+	end
 
 	if self._loadedModuleFns and self._loadedModuleFns:has(modulePath) then
 		local loadedModule = self._loadedModuleFns:get(modulePath) :: { any }
@@ -1952,10 +2014,19 @@ function Runtime_private:_execModule(
 		-- Narrowing this type here lets us appease the type checker while still
 		-- counting on types for the rest of this file
 		if loadModuleEnabled then
-			local loadmodule: (ModuleScript) -> (any, string, () -> any) = debug["loadmodule"]
-			moduleFunction, errorMessage, cleanupFn = loadmodule(modulePath)
+			local loadmoduleFn = loadmodule :: (ModuleScript) -> (any, string, () -> any)
+			local loadOk, loadErr = pcall(function()
+				moduleFunction, errorMessage, cleanupFn = loadmoduleFn(modulePath)
+			end)
+			if not loadOk then
+				if tryRequireFallback(loadErr) then
+					return
+				end
+			end
+		elseif tryRequireFallback("disabled") then
+			return
 		else
-			moduleFunction = loadstring(modulePath.Source, modulePath:GetFullName())
+			errorMessage = "Unable to load module using debug.loadmodule or require fallback."
 		end
 		-- ROBLOX NOTE: we are not using assert() as it throws a bare string and we need to throw an Error object
 		if moduleFunction == nil then
